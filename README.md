@@ -1,5 +1,8 @@
 # Omniverse Isaac Gym Reinforcement Learning Environments for Isaac Sim
 
+https://github.com/user-attachments/assets/9a6013c0-a956-47e5-8723-1dbc76c198ea
+
+
 ## About this repository
 
 This repository contains Reinforcement Learning examples that can be run with the latest release of [Isaac Sim](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/overview.html). RL examples are trained using PPO from [rl_games](https://github.com/Denys88/rl_games) library and examples are built on top of Isaac Sim's `omni.isaac.core` and `omni.isaac.gym` frameworks.
