@@ -1,5 +1,5 @@
 # Omniverse Isaac Gym Reinforcement Learning Environments for Isaac Sim
-<img src="![UR](https://github.com/user-attachments/assets/15054bca-19a1-4486-a06d-8d8d48da094a)" width="300" height="150"/>&emsp;<img src="https://user-images.githubusercontent.com/34286328/184172037-cdad9ee8-f705-466f-bbde-3caa6c7dea37.gif" width="300" height="150"/>
+<img src="https://github.com/user-attachments/assets/15054bca-19a1-4486-a06d-8d8d48da094a" width="300" height="150"/>&emsp;<img src="https://user-images.githubusercontent.com/34286328/184172037-cdad9ee8-f705-466f-bbde-3caa6c7dea37.gif" width="300" height="150"/>
 
 
 ## About this repository
