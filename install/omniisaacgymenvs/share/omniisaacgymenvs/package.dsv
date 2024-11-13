@@ -1,0 +1,3 @@
+source;share/omniisaacgymenvs/hook/pythonpath.ps1
+source;share/omniisaacgymenvs/hook/pythonpath.dsv
+source;share/omniisaacgymenvs/hook/pythonpath.sh

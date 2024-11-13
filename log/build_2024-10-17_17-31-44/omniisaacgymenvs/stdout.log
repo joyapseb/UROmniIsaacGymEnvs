@@ -1,0 +1,105 @@
+running egg_info
+creating build/omniisaacgymenvs/omniisaacgymenvs.egg-info
+writing build/omniisaacgymenvs/omniisaacgymenvs.egg-info/PKG-INFO
+writing dependency_links to build/omniisaacgymenvs/omniisaacgymenvs.egg-info/dependency_links.txt
+writing requirements to build/omniisaacgymenvs/omniisaacgymenvs.egg-info/requires.txt
+writing top-level names to build/omniisaacgymenvs/omniisaacgymenvs.egg-info/top_level.txt
+writing manifest file 'build/omniisaacgymenvs/omniisaacgymenvs.egg-info/SOURCES.txt'
+reading manifest file 'build/omniisaacgymenvs/omniisaacgymenvs.egg-info/SOURCES.txt'
+adding license file 'LICENSE.txt'
+writing manifest file 'build/omniisaacgymenvs/omniisaacgymenvs.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs
+copying omniisaacgymenvs/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs
+copying omniisaacgymenvs/extension.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/ant.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/anymal.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/allegro_hand.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/humanoid.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/ball_balance.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/shadow_hand.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/ingenuity.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/crazyflie.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/quadcopter.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/cartpole.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/anymal_terrain.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/franka_deformable.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/cartpole_camera.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/franka_cabinet.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+copying omniisaacgymenvs/tasks/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tests
+copying omniisaacgymenvs/tests/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tests
+copying omniisaacgymenvs/tests/runner.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tests
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs
+copying omniisaacgymenvs/envs/vec_env_rlgames.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs
+copying omniisaacgymenvs/envs/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs
+copying omniisaacgymenvs/envs/vec_env_rlgames_mt.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared
+copying omniisaacgymenvs/tasks/shared/locomotion.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared
+copying omniisaacgymenvs/tasks/shared/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared
+copying omniisaacgymenvs/tasks/shared/in_hand_manipulation.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared
+running install
+running install_lib
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/ant.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/anymal.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/allegro_hand.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/humanoid.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared/locomotion.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shared/in_hand_manipulation.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/ball_balance.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/shadow_hand.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/ingenuity.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/crazyflie.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/quadcopter.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/cartpole.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/anymal_terrain.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/franka_deformable.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/cartpole_camera.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/franka_cabinet.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tasks/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tests
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tests/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tests
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/tests/runner.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tests
+creating /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs/vec_env_rlgames.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/envs/vec_env_rlgames_mt.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/__init__.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs
+copying /home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/build/lib/omniisaacgymenvs/extension.py -> /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/ant.py to ant.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/anymal.py to anymal.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/allegro_hand.py to allegro_hand.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/humanoid.py to humanoid.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared/locomotion.py to locomotion.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shared/in_hand_manipulation.py to in_hand_manipulation.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/ball_balance.py to ball_balance.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/shadow_hand.py to shadow_hand.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/ingenuity.py to ingenuity.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/crazyflie.py to crazyflie.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/quadcopter.py to quadcopter.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/cartpole.py to cartpole.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/anymal_terrain.py to anymal_terrain.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/franka_deformable.py to franka_deformable.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/cartpole_camera.py to cartpole_camera.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/franka_cabinet.py to franka_cabinet.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tasks/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tests/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/tests/runner.py to runner.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs/vec_env_rlgames.py to vec_env_rlgames.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/envs/vec_env_rlgames_mt.py to vec_env_rlgames_mt.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs/extension.py to extension.cpython-310.pyc
+running install_egg_info
+Copying build/omniisaacgymenvs/omniisaacgymenvs.egg-info to /home/sebasjp/AIST/OmniIsaacGymEnvs/install/omniisaacgymenvs/lib/python3.10/site-packages/omniisaacgymenvs-2023.1.1-py3.10.egg-info
+running install_scripts
+writing list of installed files to '/home/sebasjp/AIST/OmniIsaacGymEnvs/build/omniisaacgymenvs/install.log'
