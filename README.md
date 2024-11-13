@@ -29,7 +29,7 @@ It is recommended to have at least 32GB RAM and a GPU with at least 12GB VRAM. F
 
 Follow the Isaac Sim [documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_workstation.html) to install the latest Isaac Sim release. 
 
-*Examples in this repository rely on features from the most recent Isaac Sim release. Please make sure to update any existing Isaac Sim build to the latest release version, 2023.1.1, to ensure examples work as expected.*
+*Examples in this repository rely on features from IsaacSim 4.0.0 and 4.1.0. The latest version 4.2.0 does not longer supports OmniIsaacGymEnvs*
 
 Once installed, this repository can be used as a python module, `omniisaacgymenvs`, with the python executable provided in Isaac Sim.
 
