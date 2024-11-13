@@ -31,7 +31,6 @@ import math
 
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from omni.isaac.core.articulations import ArticulationView
 from omni.isaac.core.utils.prims import get_prim_at_path
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
@@ -46,15 +45,6 @@ class CartpoleTask(RLTask):
 
         self._num_observations = 4
         self._num_actions = 1
-
-        self.rew_buf = torch.tensor([])
-        self.zero = []
-        self.one = []  
-        self.two = [] 
-        self.three= [] 
-        self.all_rewards = [] 
-        plt.style.use('ggplot')
-
 
         RLTask.__init__(self, name, env)
         return
@@ -112,17 +102,6 @@ class CartpoleTask(RLTask):
         self.obs_buf[:, 2] = self.pole_pos
         self.obs_buf[:, 3] = self.pole_vel
 
-        self.all_rewards.extend(self.rew_buf[:].cpu().numpy())
-
-        for i, name in enumerate(["zero", "one", "two", "three"]):
-            # Create tensor for each variable, then extend the corresponding list
-            var = self.obs_buf[0, i].unsqueeze(-1)
-            getattr(self, name).extend(var.cpu().numpy())
-
-
-        if len(self.all_rewards) >= 811000: 
-            self.plot_rewards(self.zero, self.one, self.two, self.three)
-
         observations = {self._cartpoles.name: {"obs_buf": self.obs_buf}}
         return observations
 
@@ -178,82 +157,8 @@ class CartpoleTask(RLTask):
 
         self.rew_buf[:] = reward
 
-       
     def is_done(self) -> None:
         resets = torch.where(torch.abs(self.cart_pos) > self._reset_dist, 1, 0)
         resets = torch.where(torch.abs(self.pole_pos) > math.pi / 2, 1, resets)
         resets = torch.where(self.progress_buf >= self._max_episode_length, 1, resets)
         self.reset_buf[:] = resets
-    
-    def plot_rewards(self,zero, one, two, three):
-    
-        # plt.plot(zero, label = 'cart_pos')
-        # plt.plot(one, label = 'cart_vel')
-        # plt.plot(two, label = 'pole_pos')
-        # plt.plot(three, label = 'pole_vel')
-
-        # plt.xlabel('episode')
-        # plt.ylabel('pole pos')
-        # plt.title('rewards over episodes')
-        # plt.legend(loc='upper left')
-        # plt.tight_layout()
-        
-        # plt.savefig('_plot.png')
-
-
-        fig1, ax1 = plt.subplots()
-        fig2, ax2 = plt.subplots()
-        plt.title("one")
-
-        ax1.plot(zero,label='cart_pos')
-        ax1.plot(two, label='pole_pos')
-
-        ax1.legend()
-        ax1.set_xlabel('episode')
-        ax1.set_ylabel('position')
-
-
-        ax2.plot(one, label='cart_vel')
-        ax2.plot(three, label='pole_vel')
-
-        ax2.legend()
-        ax2.set_xlabel('episode')
-        ax2.set_ylabel('velocity')
-
-        plt.tight_layout()
-
-        fig1.savefig('POS.png')
-        fig2.savefig('VEL.png')
-
-        plt.close()
-
-
-# data = pd.read_csv('data.csv')
-# ages = data['Age']
-# dev_salaries = data['All_Devs']
-# py_salaries = data['Python']
-# js_salaries = data['JavaScript']
-
-# fig1, ax1 = plt.subplots()
-# fig2, ax2 = plt.subplots()
-
-# ax1.plot(ages, dev_salaries, color='#444444',
-#          linestyle='--', label='All Devs')
-
-# ax2.plot(ages, py_salaries, label='Python')
-# ax2.plot(ages, js_salaries, label='JavaScript')
-
-# ax1.legend()
-# ax1.set_title('Median Salary (USD) by Age')
-# ax1.set_ylabel('Median Salary (USD)')
-
-# ax2.legend()
-# ax2.set_xlabel('Ages')
-# ax2.set_ylabel('Median Salary (USD)')
-
-# plt.tight_layout()
-
-# plt.show()
-
-# fig1.savefig('fig1.png')
-# fig2.savefig('fig2.png')

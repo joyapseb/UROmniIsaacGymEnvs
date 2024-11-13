@@ -38,7 +38,6 @@ class FactoryUR5e(Robot):
         self._orientation = torch.tensor([0.0, 0.0, 0.0, 1.0]) if orientation is None else orientation
 
         self._usd_path = "../Models/ur5e_rl_libre.usd"
-        # self._usd_path = "../Models/ur5e_rl_limited.usd"
         add_reference_to_stage(self._usd_path, prim_path)
      
         super().__init__(
@@ -61,7 +60,7 @@ class FactoryUR5e(Robot):
         ]
 
         drive_type = ["angular"] * 6 + ["linear"] * 2
-        default_dof_pos = [math.degrees(x) for x in [0.00e+00, -2.07e+00, 1.13e+00, -2.07e+00, -1.57e+00, 6.2832e-01]] + [0.013, 0.013]
+        default_dof_pos = [math.degrees(x) for x in [0.00e+00, -2.07e+00, 1.13e+00, -2.07e+00, -1.57e+00, 5.60e-01]] + [0.013, 0.013]
         stiffness = [40 * np.pi / 180] * 6 + [1000] * 2
         damping = [80 * np.pi / 180] * 6 + [20] * 2
         max_force = [87, 87, 87, 87, 87, 12, 200, 200]

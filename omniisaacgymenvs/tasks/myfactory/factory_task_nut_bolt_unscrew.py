@@ -59,18 +59,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         super().__init__(name, sim_config, env)
 
-        self.lf_x = []
-        self.lf_y = []
-        self.lf_z = []
-
-        self.rf_x = []
-        self.rf_y = []
-        self.rf_z = []
-
-        plt.style.use('bmh')
-
-        self.flag= False
-
         self.randomization_buf = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
         self._get_task_yaml_params()
 
@@ -181,37 +169,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             rand_env_ids = torch.nonzero(torch.logical_and(rand_envs, reset_buf))
             self.dr.physics_view.step_randomization(rand_env_ids)
             self.randomization_buf[rand_env_ids] = 0
-    
-    async def pre_physics_step_async(self, actions) -> None:
-        """Reset environments. Apply actions from policy. Simulation step called after this method."""
-
-        if not self.world.is_playing():
-            return
-
-        env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
-        reset_buf = self.reset_buf.clone()
-
-        if len(env_ids) > 0:
-            await self.reset_idx_async(env_ids)
-
-        self.actions = actions.clone().to(
-            self.device
-        )  # shape = (num_envs, num_actions); values = [-1, 1]
-
-        self._apply_actions_as_ctrl_targets(
-            actions=self.actions, ctrl_target_gripper_dof_pos=0.0, do_scale=True
-        )
-
-        if self._dr_randomizer.randomize:
-            rand_envs = torch.where(
-                self.randomization_buf >= self._dr_randomizer.min_frequency,
-                torch.ones_like(self.randomization_buf),
-                torch.zeros_like(self.randomization_buf),
-            )
-
-            rand_env_ids = torch.nonzero(torch.logical_and(rand_envs, reset_buf))
-            self.dr.physics_view.step_randomization(rand_env_ids)
-            self.randomization_buf[rand_env_ids] = 0
 
 
     def reset_idx(self, env_ids) -> None:
@@ -219,14 +176,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         self._reset_ur5e(env_ids)
         self._reset_object(env_ids)
-        self._reset_buffers(env_ids)
-
-    async def reset_idx_async(self, env_ids) -> None:
-        """Reset specified environments."""
-
-        self._reset_ur5e(env_ids)
-        self._reset_object(env_ids)
-
         self._reset_buffers(env_ids)
 
     def _reset_ur5e(self, env_ids) -> None:
@@ -314,11 +263,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             rot_actions = rot_actions @ torch.diag(
                 torch.tensor(self.cfg_task.rl.rot_action_scale, device=self.device)
             )
-       
-        # print("dof_posF: ",self.dof_pos[0,5])
-        print("Flag",self.flag)
-
-
+    
         # Convert to quat and set rot target
         angle = torch.norm(rot_actions, p=2, dim=-1)
         axis = rot_actions / angle.unsqueeze(-1)
@@ -372,19 +317,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         self.progress_buf[:] += 1
         
         if self.world.is_playing():
-            if self.cfg_task.env.sequential_sequence:
-                is_limited = self.dof_pos[:,5] <= -6.0
-                if is_limited.any():
-                    if self.cfg_task.env.open_and_rotate:
-                        self._open_gripper(
-                            sim_steps=self.cfg_task.env.num_gripper_open_sim_steps
-                        )
-                        self._rotate_gripper(
-                            sim_steps=self.cfg_task.env.num_gripper_rotate_sim_steps
-                        )
-                        self._close_gripper(
-                            sim_steps=self.cfg_task.env.num_gripper_close_sim_steps
-                        )
             self.refresh_base_tensors()
             self.refresh_env_tensors()
             self._refresh_task_tensors()
@@ -394,35 +326,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
     
-    async def post_physics_step_async(self):
-        """Step buffers. Refresh tensors. Compute observations and reward. Reset environments."""
-
-        self.progress_buf[:] += 1
-        
-        if self.world.is_playing():
-            if self.cfg_task.env.sequential_sequence:
-                is_limited = self.dof_pos[0,5] <= -6.0
-                if is_limited:
-                    if self.cfg_task.env.open_and_rotate:
-                        self._open_gripper_async(
-                            sim_steps=self.cfg_task.env.num_gripper_open_sim_steps
-                        )
-                        self._rotate_gripper_async(
-                            sim_steps=self.cfg_task.env.num_gripper_rotate_sim_steps
-                        )
-                        self._close_gripper_async(
-                            sim_steps=self.cfg_task.env.num_gripper_close_sim_steps
-                        )
-
-            self.refresh_base_tensors()
-            self.refresh_env_tensors()
-            self._refresh_task_tensors()
-            self.get_observations()
-            self.calculate_metrics()
-            self.get_extras()
-
-        return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
-
     def _refresh_task_tensors(self) -> None:
         """Refresh tensors."""
 
@@ -445,7 +348,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.fingerpad_midpoint_pos - self.nut_com_pos, p=2, dim=-1
         )  # distance between nut COM and midpoint between centers of fingerpads
         
-
         self.was_success = torch.zeros_like(self.progress_buf, dtype=torch.bool)
 
     def get_observations(self) -> dict:
@@ -476,23 +378,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         )  # shape = (num_envs, num_observations)
 
         observations = {self.ur5es.name: {"obs_buf": self.obs_buf}}
-
-        if self.flag == True:    
-            for i, name in enumerate(["lf_x", "lf_y", "lf_z"]):
-                # Create tensor for each variable, then extend the corresponding list
-                var = self.left_finger_force[self.rew_buf.argmax(), i].unsqueeze(-1)
-                getattr(self, name).extend(var.cpu().numpy())
-
-            for i, name in enumerate(["rf_x", "rf_y", "rf_z"]):
-                # Create tensor for each variable, then extend the corresponding list
-                var = self.right_finger_force[self.rew_buf.argmax(), i].unsqueeze(-1)
-                getattr(self, name).extend(var.cpu().numpy())
-            
-        if self.progress_buf[self.rew_buf.argmax()] == self.max_episode_length:
-            self.flag = True
-            self.plot_rewards(self.lf_x,self.lf_y,self.lf_z, self.rf_x,self.rf_y,self.rf_z)
-
-    
         return observations
 
     def calculate_metrics(self) -> None:
@@ -521,21 +406,16 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         keypoint_reward = -(self.nut_keypoint_dist + self.finger_nut_keypoint_dist)
         action_penalty = torch.norm(self.actions, p=2, dim=-1)
 
-        time_factor = (self.max_episode_length - self.progress_buf) / self.max_episode_length
-
         self.rew_buf[:] = (
             keypoint_reward * self.cfg_task.rl.keypoint_reward_scale
             - action_penalty * self.cfg_task.rl.action_penalty_scale
-            + curr_successes * self.cfg_task.rl.success_bonus #* time_factor
+            + curr_successes * self.cfg_task.rl.success_bonus
         ) 
+        # print("MIN REW: ",self.rew_buf.min(),"INDEX: ",self.rew_buf.argmin(), self.progress_buf[self.rew_buf.argmin()])
+        # print("NUT TARGET MIN_REW: ", self.nut_dist_to_target[self.rew_buf.argmin()])
 
-        print("MIN REW: ",self.rew_buf.min(),"INDEX: ",self.rew_buf.argmin(), self.progress_buf[self.rew_buf.argmin()])
-        print("NUT TARGET MIN_REW: ", self.nut_dist_to_target[self.rew_buf.argmin()])
-
-        print("MAX REW: ",self.rew_buf.max(),"INDEX: ",self.rew_buf.argmax(), self.progress_buf[self.rew_buf.argmax()])
-        print("NUT TARGET MAX_REW: ", self.nut_dist_to_target[self.rew_buf.argmax()])
-
-
+        # print("MAX REW: ",self.rew_buf.max(),"INDEX: ",self.rew_buf.argmax(), self.progress_buf[self.rew_buf.argmax()])
+        # print("NUT TARGET MAX_REW: ", self.nut_dist_to_target[self.rew_buf.argmax()])
 
     def _get_keypoint_dist(self, body) -> torch.Tensor:
         """Get keypoint distance."""
@@ -578,7 +458,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.keypoint2 = fc.translate_along_local_z(
                 pos=self.keypoint1,
                 quat=self.fingertip_midpoint_quat,
-                offset=axis_length, #change
+                offset=axis_length, 
                 device=self.device,
             )
 
@@ -589,9 +469,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
                 offset=axis_length,
                 device=self.device,
             )
-            print("kp1F: ",self.keypoint1[:,-1].min())
-            print("kp2F: ",self.keypoint2[:,-1].min())
-
 
         self.keypoint3 = self.keypoint1 + (self.keypoint2 - self.keypoint1) * 1.0 / 3.0
         self.keypoint4 = self.keypoint1 + (self.keypoint2 - self.keypoint1) * 2.0 / 3.0
@@ -604,99 +481,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             + torch.norm(self.keypoint3_targ - self.keypoint3, p=2, dim=-1)
             + torch.norm(self.keypoint4_targ - self.keypoint4, p=2, dim=-1)
         )
-        print("DIST: ",keypoint_dist.min(), keypoint_dist.argmin())
         return keypoint_dist
-
-#_______________________________________________________________sync process
-    def _open_gripper(self, sim_steps=20) -> None:
-        """Fully open gripper using controller.Called outside the RL loop"""
-        self._move_gripper_to_dof_open_pos(gripper_dof_pos=0.025, sim_steps=sim_steps)
-
-    def _close_gripper(self, sim_steps=20) -> None:
-        """Close gripper using controller. Called outside RL loop"""
-        self._move_gripper_to_dof_close_pos(gripper_dof_pos=0.011, sim_steps=sim_steps)
-
-    def _move_gripper_to_dof_close_pos(self, gripper_dof_pos, sim_steps=20) -> None:
-        delta_hand_pose = torch.zeros(
-            (self.num_envs, 6), device=self.device
-        )
-        for _ in range(sim_steps):
-            print("[Finger CLOSE]")
-            self._apply_actions_as_ctrl_targets(
-                delta_hand_pose, gripper_dof_pos, do_scale=False, ignore=True
-            )
-            SimulationContext.step(self.world, render=True)
-    def _move_gripper_to_dof_open_pos(self, gripper_dof_pos, sim_steps=20) -> None:
-        delta_hand_pose = torch.zeros(
-            (self.num_envs, 6), device=self.device
-        )
-        for _ in range(sim_steps):
-            print("[Finger OPEN]")
-            self._apply_actions_as_ctrl_targets(
-                delta_hand_pose, gripper_dof_pos, do_scale=False, ignore=True
-            )
-            SimulationContext.step(self.world, render=True)
-
-    def _rotate_gripper(
-            self, sim_steps=25
-    ) -> None:
-        delta_hand_pose = torch.zeros(
-            (self.num_envs, 6), device=self.device
-        )
-        delta_hand_pose[:, 2] =  -0.1
-        delta_hand_pose[:, 5] = -0.3
-
-        for _ in range(sim_steps):
-            print("[ROTATING]", _, delta_hand_pose)
-            self._apply_actions_as_ctrl_targets(
-                delta_hand_pose, ctrl_target_gripper_dof_pos=0.025, do_scale=True, ignore=True
-            )
-            SimulationContext.step(self.world, render=True)
-#_______________________________________________________________async process
-    async def _open_gripper_async(self, sim_steps=20) -> None:
-        """Fully open gripper using controller.Called outside the RL loop"""
-        await self._move_gripper_to_dof_open_pos_async(gripper_dof_pos=0.025, sim_steps=sim_steps)
-
-    async def _close_gripper_async(self, sim_steps=20) -> None:
-        """Close gripper using controller. Called outside RL loop"""
-        await self._move_gripper_to_dof_close_pos_async(gripper_dof_pos=0.011, sim_steps=sim_steps)
-
-
-    async def _move_gripper_to_dof_open_pos_async(self, gripper_dof_pos, sim_steps=20) -> None:
-        delta_hand_pose = torch.zeros(
-            (self.num_envs, self.cfg_task.env.numActions), device=self.device
-        )
-        for _ in range(sim_steps):
-            self._apply_actions_as_ctrl_targets(
-                delta_hand_pose, gripper_dof_pos, do_scale=False, ignore=True
-            )
-            await omni.kit.app.get_app().next_update_async()
-
-    async def _move_gripper_to_dof_close_pos_async(self, gripper_dof_pos, sim_steps=20) -> None:
-        delta_hand_pose = torch.zeros(
-            (self.num_envs, self.cfg_task.env.numActions), device=self.device
-        )
-        for _ in range(sim_steps):
-            self._apply_actions_as_ctrl_targets(
-                delta_hand_pose, gripper_dof_pos, do_scale=False, ignore=True
-            )
-            await omni.kit.app.get_app().next_update_async()
-        
-    async def _rotate_gripper_async(
-            self, sim_steps=25
-    ) -> None:
-        delta_hand_pose = torch.zeros(
-            (self.num_envs, 6), device=self.device
-        )
-        delta_hand_pose[:, 2] =  -0.1
-        delta_hand_pose[:, 5] = -0.3
-
-        for _ in range(sim_steps):
-            self._apply_actions_as_ctrl_targets(
-                delta_hand_pose, ctrl_target_gripper_dof_pos=0.025, do_scale=True, ignore=True
-            )
-            await omni.kit.app.get_app().next_update_async()
-
 
     def _get_curr_successes(self) -> torch.Tensor:
         """Get success mask at current timestep."""
@@ -704,7 +489,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         curr_successes = torch.zeros(
             (self.num_envs,), dtype=torch.bool, device=self.device
         )
-
         # If nut is close enough to target pos
         is_unscrewed = torch.where(
             self.nut_dist_to_target < self.thread_pitches.squeeze(-1) * 2,
@@ -712,7 +496,6 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             torch.zeros_like(curr_successes),
         )
         curr_successes = torch.logical_or(curr_successes, is_unscrewed)
-        print(self.thread_pitches.squeeze(-1) * 2)
         return curr_successes
 
     def _get_curr_failures(self, curr_successes) -> torch.Tensor:
@@ -772,52 +555,3 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         curr_failures = torch.logical_or(curr_failures, self.is_fallen)
    
         return curr_failures
-    
-    def plot_rewards(self,lx,ly,lz, rx,ry,rz):
-
-        fig1,ax1 = plt.subplots()
-        fig2,ax2 = plt.subplots()
-        fig3,ax3 = plt.subplots()
-        fig4,ax4 = plt.subplots()
-
-        plt.close()
-
-        ax1.plot(lx, label="left x_force")
-        ax1.plot(rx, label="right x_force")
-
-        ax2.plot(ly, label="left y_force")
-        ax2.plot(ry, label="right y_force")
-
-        ax3.plot(lz, label="left z_force")
-        ax3.plot(rz, label="right z_force")
-            
-        ax4.plot(lx, label="left x_force")
-        ax4.plot(rx, label="right x_force")
-
-        ax4.plot(ly, label="left y_force")
-        ax4.plot(ry, label="right y_force")
-
-        ax4.plot(lz, label="left z_force")
-        ax4.plot(rz, label="right z_force")
-
-        ax1.legend(loc='upper left')
-        ax1.set_xlabel('steps')
-        ax1.set_ylabel('x_force')
-
-        ax2.legend(loc='upper left')
-        ax2.set_xlabel('steps')
-        ax2.set_ylabel('y_force')
-
-        ax3.legend(loc='upper left')
-        ax3.set_xlabel('steps')
-        ax3.set_ylabel('z_force')
-
-        ax4.legend(loc='upper left')
-        ax4.set_xlabel('steps')
-        ax4.set_ylabel('Force')
-        
-        
-        fig1.savefig('x_plot.png')
-        fig2.savefig('y_plot.png')
-        fig3.savefig('z_plot.png')
-        fig4.savefig('all_plot.png')

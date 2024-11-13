@@ -204,10 +204,7 @@ class FactoryBase(RLTask, FactoryABCBase):
 
         self.dof_pos = self.frankas.get_joint_positions(clone=False)
         self.dof_vel = self.frankas.get_joint_velocities(clone=False)
-        temp = self.frankas.body_names
-        # print("-------at refresh tensors: body names------")
-        # print(temp)
- 
+
         # Jacobian shape: [4, 11, 6, 9] (root has no Jacobian)
         self.franka_jacobian = self.frankas.get_jacobians()
         self.franka_mass_matrix = self.frankas.get_mass_matrices(clone=False)
@@ -216,7 +213,7 @@ class FactoryBase(RLTask, FactoryABCBase):
         self.arm_mass_matrix = self.franka_mass_matrix[
             :, 0:7, 0:7
         ]  # for Franka arm (not gripper)
-   
+
         self.hand_pos, self.hand_quat = self.frankas._hands.get_world_poses(clone=False)
         self.hand_pos -= self.env_pos
         hand_velocities = self.frankas._hands.get_velocities(clone=False)
@@ -516,9 +513,6 @@ class FactoryBase(RLTask, FactoryABCBase):
         elif self.cfg_ctrl["motor_ctrl_mode"] == "manual":
             self._set_dof_torque()
 
-
-
-    #______________________________________________NOT USED IN "MANUAL"...TORQUE BASED
     def _set_dof_pos_target(self):
         """Set Franka DOF position target to move fingertips towards target pose."""
 
@@ -557,7 +551,6 @@ class FactoryBase(RLTask, FactoryABCBase):
             ctrl_target_fingertip_contact_wrench=self.ctrl_target_fingertip_contact_wrench,
             device=self.device,
         )
-
 
         self.frankas.set_joint_efforts(efforts=self.dof_torque)
 

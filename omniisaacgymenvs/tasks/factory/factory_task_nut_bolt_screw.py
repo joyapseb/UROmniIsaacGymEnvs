@@ -38,8 +38,6 @@ import math
 import omegaconf
 import torch
 from typing import Tuple
-import matplotlib.pyplot as plt
-
 
 import omni.isaac.core.utils.torch as torch_utils
 
@@ -56,17 +54,6 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         """Initialize environment superclass. Initialize instance variables."""
 
         super().__init__(name, sim_config, env)
-
-        self.lf_x = []
-        self.lf_y = []
-        self.lf_z = []
-
-        self.rf_x = []
-        self.rf_y = []
-        self.rf_z = []
-
-        self.flag= False
-
 
         self._get_task_yaml_params()
 
@@ -330,7 +317,6 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         self.nut_dist_to_fingerpads = torch.norm(
             self.fingerpad_midpoint_pos - self.nut_com_pos, p=2, dim=-1
         )  # distance between nut COM and midpoint between centers of fingerpads
-        print("NUT TARGET: ", self.nut_dist_to_target.min(), self.nut_dist_to_target.argmin())
 
         self.was_success = torch.zeros_like(self.progress_buf, dtype=torch.bool)
 
@@ -362,24 +348,6 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         )  # shape = (num_envs, num_observations)
 
         observations = {self.frankas.name: {"obs_buf": self.obs_buf}}
-    
-        if self.flag == True:    
-            for i, name in enumerate(["lf_x", "lf_y", "lf_z"]):
-                # Create tensor for each variable, then extend the corresponding list
-                var = self.left_finger_force[self.rew_buf.argmax(), i].unsqueeze(-1)
-                getattr(self, name).extend(var.cpu().numpy())
-
-            for i, name in enumerate(["rf_x", "rf_y", "rf_z"]):
-                # Create tensor for each variable, then extend the corresponding list
-                var = self.right_finger_force[self.rew_buf.argmax(), i].unsqueeze(-1)
-                getattr(self, name).extend(var.cpu().numpy())
-            
-        
-        
-        if self.progress_buf[self.rew_buf.argmax()] == self.max_episode_length:
-            self.flag = True
-            self.plot_rewards(self.lf_x,self.lf_y,self.lf_z, self.rf_x,self.rf_y,self.rf_z)
-
 
         return observations
 
@@ -412,9 +380,6 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
             - action_penalty * self.cfg_task.rl.action_penalty_scale
             + curr_successes * self.cfg_task.rl.success_bonus
         )
-        print("MIN REW: ",self.rew_buf.min(),"INDEX: ",self.rew_buf.argmin())
-        print("MAX REW: ",self.rew_buf.max(),"INDEX: ",self.rew_buf.argmax())
-
 
     def _get_keypoint_dist(self, body) -> torch.Tensor:
         """Get keypoint distance."""
@@ -501,7 +466,7 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         )
 
         curr_successes = torch.logical_or(curr_successes, is_close)
-        print("curr_success", curr_successes)
+
         return curr_successes
 
     def _get_curr_failures(self, curr_successes) -> torch.Tensor:
@@ -552,55 +517,5 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         curr_failures = torch.logical_or(curr_failures, self.is_far)
         curr_failures = torch.logical_or(curr_failures, self.is_slipped)
         curr_failures = torch.logical_or(curr_failures, self.is_fallen)
-        print("curr_failures:", curr_failures)
 
         return curr_failures
-    
-    def plot_rewards(self,lx,ly,lz, rx,ry,rz):
-
-        fig1,ax1 = plt.subplots()
-        fig2,ax2 = plt.subplots()
-        fig3,ax3 = plt.subplots()
-        fig4,ax4 = plt.subplots()
-
-        plt.close()
-
-        ax1.plot(lx, label="left x_force")
-        ax1.plot(rx, label="right x_force")
-
-        ax2.plot(ly, label="left y_force")
-        ax2.plot(ry, label="right y_force")
-
-        ax3.plot(lz, label="left z_force")
-        ax3.plot(rz, label="right z_force")
-            
-        ax4.plot(lx, label="left x_force")
-        ax4.plot(rx, label="right x_force")
-
-        ax4.plot(ly, label="left y_force")
-        ax4.plot(ry, label="right y_force")
-
-        ax4.plot(lz, label="left z_force")
-        ax4.plot(rz, label="right z_force")
-
-        ax1.legend(loc='upper left')
-        ax1.set_xlabel('steps')
-        ax1.set_ylabel('x_force')
-
-        ax2.legend(loc='upper left')
-        ax2.set_xlabel('steps')
-        ax2.set_ylabel('y_force')
-
-        ax3.legend(loc='upper left')
-        ax3.set_xlabel('steps')
-        ax3.set_ylabel('z_force')
-
-        ax4.legend(loc='upper left')
-        ax4.set_xlabel('steps')
-        ax4.set_ylabel('Force')
-        
-        
-        fig1.savefig('x_plot.png')
-        fig2.savefig('y_plot.png')
-        fig3.savefig('z_plot.png')
-        fig4.savefig('all_plot.png')

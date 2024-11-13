@@ -101,7 +101,7 @@ rl:
   clamp_rot: True
   clamp_rot_thresh: 1.0e-6
 
-  add_obs_finger_force: True  # add observations of force on left and right fingers
+  add_obs_finger_force: False  # add observations of force on left and right fingers
 
   keypoint_reward_scale: 1.0  # scale on keypoint-based reward
   action_penalty_scale: 0.0  # scale on action penalty
@@ -143,8 +143,6 @@ ctrl:
       motion_ctrl_axes: [0, 0, 1, 0, 0, 1]
       task_prop_gains: [1, 1, 4, 1, 1, 800]
       task_deriv_gains: [1, 1, 1, 1, 1, 1]
-      force_ctrl_axes: [0, 0, 1, 0, 0, 0] #addition
-      wrench_prop_gains: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1] #addition
   open_loop_force:
       force_ctrl_axes: [0, 0, 1, 0, 0, 0]
   closed_loop_force:

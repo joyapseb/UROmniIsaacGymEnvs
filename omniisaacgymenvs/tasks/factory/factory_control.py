@@ -61,8 +61,6 @@ def compute_dof_pos_target(
         rot_error_type="axis_angle",
     )
 
-
-
     delta_fingertip_pose = torch.cat((pos_error, axis_angle_error), dim=1)
     delta_arm_dof_pos = _get_delta_dof_pos(
         delta_pose=delta_fingertip_pose,
@@ -70,15 +68,12 @@ def compute_dof_pos_target(
         jacobian=jacobian,
         device=device,
     )
-    debug(ctrl_target_dof_pos)
 
     ctrl_target_dof_pos[:, 0:7] = arm_dof_pos + delta_arm_dof_pos
     ctrl_target_dof_pos[:, 7:9] = ctrl_target_gripper_dof_pos  # gripper finger joints
 
     return ctrl_target_dof_pos
 
-def debug(ctrl):
-    print(ctrl)
 
 def compute_dof_torque(
     cfg_ctrl,

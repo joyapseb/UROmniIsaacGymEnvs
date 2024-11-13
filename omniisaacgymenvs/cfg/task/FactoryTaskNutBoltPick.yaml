@@ -87,7 +87,6 @@ env:
   close_and_lift: True  # close gripper and lift after last step of episode
   num_gripper_move_sim_steps: 40  # number of timesteps to reserve for moving gripper before first step of episode
   num_gripper_close_sim_steps: 40  # number of timesteps to reserve for closing gripper after last step of episode
-  num_gripper_open_sim_steps: 40  # number of timesteps to reserve for closing gripper after last step of episode
   num_gripper_lift_sim_steps: 40  # number of timesteps to reserve for lift after last step of episode
 
 randomize:

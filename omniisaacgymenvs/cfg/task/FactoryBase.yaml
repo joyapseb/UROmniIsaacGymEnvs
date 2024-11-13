@@ -14,4 +14,3 @@ env:
   table_height: 0.4
   franka_friction: 1.0
   table_friction: 0.3
-
