@@ -101,14 +101,10 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         # Reset all envs
         indices = torch.arange(self.num_envs, dtype=torch.int64, device=self.device)
-        asyncio.ensure_future(
-            self.reset_idx_async(indices)
-        )
-        # self.reset_idx(indices)
+        self.reset_idx(indices)
 
         if self._dr_randomizer.randomize:
             self._dr_randomizer.set_up_domain_randomization(self)
-
 
     def _acquire_task_tensors(self) -> None:
         """Acquire tensors."""

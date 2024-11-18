@@ -419,16 +419,6 @@ class myFactoryBase(RLTask, myFactoryABCBase):
                 self.cfg_task.ctrl.operational_space_motion.motion_ctrl_axes,
                 device=self.device,
             ).repeat((self.num_envs, 1))
-            self.cfg_ctrl["do_force_ctrl"] = True ####CHANGEDDDD
-            self.cfg_ctrl["force_ctrl_method"] = "closed"
-            self.cfg_ctrl["wrench_prop_gains"] = torch.tensor(
-                self.cfg_task.ctrl.operational_space_motion.wrench_prop_gains,
-                device=self.device,
-            ).repeat((self.num_envs, 1))
-            self.cfg_ctrl["force_ctrl_axes"] = torch.tensor(
-                self.cfg_task.ctrl.operational_space_motion.force_ctrl_axes,
-                device=self.device,
-            ).repeat((self.num_envs, 1))
 #_______________________________________________________________________________
 
 
