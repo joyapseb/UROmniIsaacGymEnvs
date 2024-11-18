@@ -10,7 +10,7 @@ PYTHON_PATH scripts/rlgames_train.py task=FactoryUR5eNutBoltUnScrew num_envs=256
 ```
 To test a trained checkpoint, run:
 ```
-PYTHON_PATH scripts/rlgames_train.py task=FactoryUR5eNutBoltUnScrew num_envs=256 checkpoint=/[your_path]/OmniIsaacGymEnvs/omniisaacgymenvs/runs/WEE/nn/WEE.pth test=True
+PYTHON_PATH scripts/rlgames_train.py task=FactoryUR5eNutBoltUnScrew num_envs=256 checkpoint=runs/WEE/nn/WEE.pth test=True
 
 ```
 
