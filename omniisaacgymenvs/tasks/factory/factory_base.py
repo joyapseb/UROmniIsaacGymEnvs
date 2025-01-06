@@ -41,6 +41,7 @@ import numpy as np
 import torch
 
 from omni.isaac.core.objects import FixedCuboid
+from omni.isaac.core.articulations import Articulation
 from omni.isaac.core.utils.prims import get_prim_at_path
 from omni.isaac.core.utils.stage import get_current_stage
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
@@ -51,15 +52,24 @@ from omniisaacgymenvs.tasks.factory.factory_schema_class_base import FactoryABCB
 from omniisaacgymenvs.tasks.factory.factory_schema_config_base import (
     FactorySchemaConfigBase,
 )
+from omni.isaac.core.utils.extensions import enable_extension
+enable_extension("omni.isaac.ros2_bridge")
+import rclpy
+from omniisaacgymenvs.sim2real.plot import Plotter
 
+
+# enable ROS2 bridge extension
+enable_extension("omni.isaac.ros2_bridge")
 
 class FactoryBase(RLTask, FactoryABCBase):
     def __init__(self, name, sim_config, env) -> None:
         """Initialize instance variables. Initialize RLTask superclass."""
+        rclpy.init()
 
         # Set instance variables from base YAML
         self._get_base_yaml_params()
         self._env_spacing = self.cfg_base.env.env_spacing
+
 
         # Set instance variables from task and train YAMLs
         self._sim_config = sim_config
@@ -70,6 +80,9 @@ class FactoryBase(RLTask, FactoryABCBase):
         self._num_actions = sim_config.task_config["env"]["numActions"]
 
         super().__init__(name, env)
+
+        
+        self.simulated_tf_data = Plotter()
 
     def _get_base_yaml_params(self):
         """Initialize instance variables from YAML files."""
@@ -204,7 +217,17 @@ class FactoryBase(RLTask, FactoryABCBase):
 
         self.dof_pos = self.frankas.get_joint_positions(clone=False)
         self.dof_vel = self.frankas.get_joint_velocities(clone=False)
+        sensor_joint_forces = self.frankas.get_applied_joint_efforts(clone=False)
+        temp = self.frankas.joint_names
+        # print("-------at refresh tensors: body names------")
+        # print(temp)
+        '''
+        -------at refresh tensors: body names------
+        ['panda_link0', 'panda_link1', 'panda_link2', 'panda_link3',
+        'panda_link4', 'panda_link5', 'panda_link6', 'panda_link7',
+        'panda_hand', 'panda_leftfinger', 'panda_rightfinger', 'panda_fingertip_centered']
 
+        '''
         # Jacobian shape: [4, 11, 6, 9] (root has no Jacobian)
         self.franka_jacobian = self.frankas.get_jacobians()
         self.franka_mass_matrix = self.frankas.get_mass_matrices(clone=False)
@@ -213,7 +236,7 @@ class FactoryBase(RLTask, FactoryABCBase):
         self.arm_mass_matrix = self.franka_mass_matrix[
             :, 0:7, 0:7
         ]  # for Franka arm (not gripper)
-
+   
         self.hand_pos, self.hand_quat = self.frankas._hands.get_world_poses(clone=False)
         self.hand_pos -= self.env_pos
         hand_velocities = self.frankas._hands.get_velocities(clone=False)
@@ -284,6 +307,11 @@ class FactoryBase(RLTask, FactoryABCBase):
         self.fingertip_midpoint_jacobian = (
             self.left_finger_jacobian + self.right_finger_jacobian
         ) * 0.5
+
+
+        self.get_plot(sensor_joint_forces[0]) #only for wrist3 data
+ 
+
 
     def parse_controller_spec(self, add_to_stage):
         """Parse controller specification into lower-level controller configuration."""
@@ -513,6 +541,9 @@ class FactoryBase(RLTask, FactoryABCBase):
         elif self.cfg_ctrl["motor_ctrl_mode"] == "manual":
             self._set_dof_torque()
 
+
+
+    #______________________________________________NOT USED IN "MANUAL"...TORQUE BASED
     def _set_dof_pos_target(self):
         """Set Franka DOF position target to move fingertips towards target pose."""
 
@@ -552,6 +583,7 @@ class FactoryBase(RLTask, FactoryABCBase):
             device=self.device,
         )
 
+
         self.frankas.set_joint_efforts(efforts=self.dof_torque)
 
     def enable_gravity(self, gravity_mag):
@@ -569,3 +601,6 @@ class FactoryBase(RLTask, FactoryABCBase):
         self.world._physics_sim_view.set_gravity(
             carb.Float3(gravity[0], gravity[1], gravity[2])
         )
+
+    def get_plot(self,tf):
+        self.simulated_tf_data.get_plot(tf)

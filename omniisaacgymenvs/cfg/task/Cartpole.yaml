@@ -76,3 +76,6 @@ sim:
     # per-shape
     contact_offset: 0.02
     rest_offset: 0.001
+
+sim2real:
+  enabled : True

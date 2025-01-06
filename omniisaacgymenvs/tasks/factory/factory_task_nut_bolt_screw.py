@@ -38,6 +38,8 @@ import math
 import omegaconf
 import torch
 from typing import Tuple
+import matplotlib.pyplot as plt
+
 
 import omni.isaac.core.utils.torch as torch_utils
 
@@ -54,6 +56,17 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         """Initialize environment superclass. Initialize instance variables."""
 
         super().__init__(name, sim_config, env)
+
+        self.lf_x = []
+        self.lf_y = []
+        self.lf_z = []
+
+        self.rf_x = []
+        self.rf_y = []
+        self.rf_z = []
+
+        self.flag= False
+
 
         self._get_task_yaml_params()
 
@@ -317,6 +330,7 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         self.nut_dist_to_fingerpads = torch.norm(
             self.fingerpad_midpoint_pos - self.nut_com_pos, p=2, dim=-1
         )  # distance between nut COM and midpoint between centers of fingerpads
+        print("NUT TARGET: ", self.nut_dist_to_target.min(), self.nut_dist_to_target.argmin())
 
         self.was_success = torch.zeros_like(self.progress_buf, dtype=torch.bool)
 
@@ -348,6 +362,17 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         )  # shape = (num_envs, num_observations)
 
         observations = {self.frankas.name: {"obs_buf": self.obs_buf}}
+    
+        if self.flag == True:    
+            for i, name in enumerate(["lf_x", "lf_y", "lf_z"]):
+                # Create tensor for each variable, then extend the corresponding list
+                var = self.left_finger_force[self.rew_buf.argmax(), i].unsqueeze(-1)
+                getattr(self, name).extend(var.cpu().numpy())
+
+            for i, name in enumerate(["rf_x", "rf_y", "rf_z"]):
+                # Create tensor for each variable, then extend the corresponding list
+                var = self.right_finger_force[self.rew_buf.argmax(), i].unsqueeze(-1)
+                getattr(self, name).extend(var.cpu().numpy())
 
         return observations
 
@@ -380,6 +405,9 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
             - action_penalty * self.cfg_task.rl.action_penalty_scale
             + curr_successes * self.cfg_task.rl.success_bonus
         )
+        print("MIN REW: ",self.rew_buf.min(),"INDEX: ",self.rew_buf.argmin())
+        print("MAX REW: ",self.rew_buf.max(),"INDEX: ",self.rew_buf.argmax())
+
 
     def _get_keypoint_dist(self, body) -> torch.Tensor:
         """Get keypoint distance."""
@@ -466,7 +494,7 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         )
 
         curr_successes = torch.logical_or(curr_successes, is_close)
-
+        print("curr_success", curr_successes)
         return curr_successes
 
     def _get_curr_failures(self, curr_successes) -> torch.Tensor:
@@ -517,5 +545,7 @@ class FactoryTaskNutBoltScrew(FactoryEnvNutBolt, FactoryABCTask):
         curr_failures = torch.logical_or(curr_failures, self.is_far)
         curr_failures = torch.logical_or(curr_failures, self.is_slipped)
         curr_failures = torch.logical_or(curr_failures, self.is_fallen)
+        print("curr_failures:", curr_failures)
 
         return curr_failures
+    

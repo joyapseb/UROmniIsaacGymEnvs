@@ -179,7 +179,6 @@ class myFactoryEnvNutBolt(myFactoryBase, myFactoryABCEnv):
 
         if self._dr_randomizer.randomize:
             self._dr_randomizer.apply_on_startup_domain_randomization(self)
-            print("<><><><><><><><><><><><><><><><><>")
 
     def create_nut_bolt_material(self):
         """Define nut and bolt material."""
@@ -215,8 +214,8 @@ class myFactoryEnvNutBolt(myFactoryBase, myFactoryABCEnv):
             nut_translation = torch.tensor(
                 [
                     0.0,
-                    self.cfg_env.env.nut_lateral_offset,
-                    self.cfg_base.env.table_height,
+                    0.0,
+                    0.0,
                 ],
                 device=self._device,
             )
@@ -264,7 +263,7 @@ class myFactoryEnvNutBolt(myFactoryBase, myFactoryABCEnv):
                 )
 
             bolt_translation = torch.tensor(
-                [0.0, 0.0, self.cfg_base.env.table_height], device=self._device
+                [0.615, -0.425, self.cfg_base.env.table_height], device=self._device #harcode
             )
             bolt_orientation = torch.tensor([1.0, 0.0, 0.0, 0.0], device=self._device)
 

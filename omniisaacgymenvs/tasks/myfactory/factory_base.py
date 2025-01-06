@@ -39,6 +39,8 @@ import hydra
 import math
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
+
 
 from omni.isaac.core.objects import FixedCuboid
 from omni.isaac.core.utils.prims import get_prim_at_path
@@ -51,15 +53,20 @@ from omniisaacgymenvs.tasks.myfactory.factory_schema_class_base import myFactory
 from omniisaacgymenvs.tasks.myfactory.factory_schema_config_base import (
     myFactorySchemaConfigBase,
 )
+from omni.isaac.core.utils.extensions import enable_extension
+enable_extension("omni.isaac.ros2_bridge")
+import rclpy
+
+from omniisaacgymenvs.sim2real.plot import Plotter
 
 
 class myFactoryBase(RLTask, myFactoryABCBase):
     def __init__(self, name, sim_config, env) -> None:
         """Initialize instance variables. Initialize RLTask superclass."""
-
         # Set instance variables from base YAML
         self._get_base_yaml_params()
         self._env_spacing = self.cfg_base.env.env_spacing
+
 
         # Set instance variables from task and train YAMLs
         self._sim_config = sim_config
@@ -70,6 +77,12 @@ class myFactoryBase(RLTask, myFactoryABCBase):
         self._num_actions = sim_config.task_config["env"]["numActions"]
 
         super().__init__(name, env)
+
+        sim2real_config = self._task_cfg['sim2real']
+        if sim2real_config['enabled'] and self._num_envs == 1:
+            self.simulated_tf_data = Plotter()
+            print("init  PLOTTER connection")
+        return
 
     def _get_base_yaml_params(self):
         """Initialize instance variables from YAML files."""
@@ -97,7 +110,7 @@ class myFactoryBase(RLTask, myFactoryABCBase):
         self._stage = get_current_stage()
 
         if add_to_stage:
-            ur5e_translation = np.array([self.cfg_base.env.ur5e_depth, 0.133, 0.0])
+            ur5e_translation = np.array([self.cfg_base.env.ur5e_depth, 0.138, 0.0])
             ur5e_orientation = np.array([0.0, 0.0, 0.0, 1.0])
 
             ur5e = FactoryUR5e(
@@ -139,9 +152,9 @@ class myFactoryBase(RLTask, myFactoryABCBase):
                         rb.GetMaxAngularVelocityAttr().Set(64 / math.pi * 180)
 
             table_translation = np.array(
-                [0.0, 0.0, self.cfg_base.env.table_height * 0.5]
+                [0.615, -0.425, self.cfg_base.env.table_height * 0.5]
             )
-            table_orientation = np.array([1.0, 0.0, 0.0, 0.0])
+            table_orientation = np.array([0.0, 0.0, 0.0, 0.0])
 
             table = FixedCuboid(
                 prim_path=self.default_zero_env_path + "/table",
@@ -204,26 +217,14 @@ class myFactoryBase(RLTask, myFactoryABCBase):
 
         self.dof_pos = self.ur5es.get_joint_positions(clone=False)
         self.dof_vel = self.ur5es.get_joint_velocities(clone=False)
+        sensor_joint_forces = self.ur5es.get_measured_joint_forces(clone=False) #mimics FT sensors
+        # sensor_joint_efforts = self.ur5es.get_measured_joint_efforts(clone=False) #activee
+        sensor_joint_forces = sensor_joint_forces * 10
 
-        # temp = self.ur5es.body_names
-        # print("-------at refresh tensors: body names------")
-        # print(temp)
-        # temp = self.ur5es.dof_names
-        # print("-------at refresh tensors: dof names------")
-        # print(temp)
-        # temp = self.ur5es.joint_names
-        # print("-------at refresh tensors: joint names------")
-        # print(temp)
-        # dofs = self.ur5es.num_dof
-        # print("-------at refresh tensors: num dofs------")
-        # print(dofs)
-        # dofs = self.ur5es.num_joints
-        # print("-------at refresh tensors: num joints------")
-        # print(dofs)
-        # dofs = self.ur5es.num_fixed_tendons
-        # print("-------at refresh tensors: num tendons------")
-        # print(dofs)
-        #Jacobian shape: [n, 10, 6, 8] (root has no Jacobian)
+
+        # print("JOINT FORCES", sensor_joint_forces)
+        # print("joint_names", self.ur5es.num_joints, self.ur5es.joint_names)
+
         self.ur5e_jacobian = self.ur5es.get_jacobians()  #The jacobian (6x12) for each joint of the UR5e + gripper (6+2)
         self.ur5e_mass_matrix = self.ur5es.get_mass_matrices(clone=False)
         
@@ -307,6 +308,19 @@ class myFactoryBase(RLTask, myFactoryABCBase):
         self.fingertip_midpoint_jacobian = (
             self.left_finger_jacobian + self.right_finger_jacobian
         ) * 0.5
+
+
+        # nut_contact = self.nuts.get_net_contact_forces(clone=False)
+        # bolt_contact = self.bolts.get_net_contact_forces(clone=False)
+        # print("nut:", nut_contact)
+        # print("bolt: ", bolt_contact)
+        # comb = torch.cat((nut_contact, bolt_contact),-1)
+        # print("comb", comb[0])        
+
+        sim2real_config = self._task_cfg['sim2real']
+        if sim2real_config['enabled'] and self._num_envs == 1:
+            self.get_plot(sensor_joint_forces[0,5]) #only for wrist3 data
+ 
 
 
     def parse_controller_spec(self, add_to_stage):
@@ -419,6 +433,8 @@ class myFactoryBase(RLTask, myFactoryABCBase):
                 self.cfg_task.ctrl.operational_space_motion.motion_ctrl_axes,
                 device=self.device,
             ).repeat((self.num_envs, 1))
+            self.cfg_ctrl["do_force_ctrl"] = False
+
 #_______________________________________________________________________________
 
 
@@ -526,7 +542,6 @@ class myFactoryBase(RLTask, myFactoryABCBase):
 
     def generate_ctrl_signals(self):
         """Get Jacobian. Set UR5e DOF position targets or DOF torques."""
-
         # Get desired Jacobian
         if self.cfg_ctrl["jacobian_type"] == "geometric":
             self.fingertip_midpoint_jacobian_tf = self.fingertip_midpoint_jacobian
@@ -583,8 +598,6 @@ class myFactoryBase(RLTask, myFactoryABCBase):
             device=self.device,
         )
  
-
-
         self.ur5es.set_joint_efforts(efforts=self.dof_torque)
 
     def enable_gravity(self, gravity_mag):
@@ -602,3 +615,7 @@ class myFactoryBase(RLTask, myFactoryABCBase):
         self.world._physics_sim_view.set_gravity(
             carb.Float3(gravity[0], gravity[1], gravity[2])
         )
+
+    def get_plot(self,tf):
+        self.simulated_tf_data.get_plot(tf)
+

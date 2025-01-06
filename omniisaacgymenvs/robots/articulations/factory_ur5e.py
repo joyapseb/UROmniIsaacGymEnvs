@@ -9,6 +9,9 @@
 
 import math
 from typing import Optional
+import carb
+from omni.isaac.core.utils.extensions import enable_extension
+enable_extension("omni.isaac.ros2_bridge")
 
 import numpy as np
 import torch
@@ -37,7 +40,13 @@ class FactoryUR5e(Robot):
         self._position = torch.tensor([1.0, 0.0, 0.0]) if translation is None else translation
         self._orientation = torch.tensor([0.0, 0.0, 0.0, 1.0]) if orientation is None else orientation
 
-        self._usd_path = "../Models/ur5e_rl_libre.usd"
+        if self._usd_path is None:
+            assets_root_path = get_assets_root_path()
+            if assets_root_path is None:
+                carb.log_error("Could not find Isaac Sim assets folder")
+            # self._usd_path = "../Models/ur5e_nov.usd"      
+            self._usd_path = "../Models/ur5e_rl_libre.usd"
+        
         add_reference_to_stage(self._usd_path, prim_path)
      
         super().__init__(
@@ -55,15 +64,15 @@ class FactoryUR5e(Robot):
             "ur5e_link3/ur5e_joint4",
             "ur5e_link4/ur5e_joint5",
             "ur5e_link5/ur5e_joint6",
-            "_hand/ur5e_finger_joint1", 
+            "_hand/ur5e_finger_joint1",
             "_hand/ur5e_finger_joint2",
         ]
 
         drive_type = ["angular"] * 6 + ["linear"] * 2
-        default_dof_pos = [math.degrees(x) for x in [0.00e+00, -2.07e+00, 1.13e+00, -2.07e+00, -1.57e+00, 5.60e-01]] + [0.013, 0.013]
-        stiffness = [40 * np.pi / 180] * 6 + [1000] * 2
-        damping = [80 * np.pi / 180] * 6 + [20] * 2
-        max_force = [87, 87, 87, 87, 87, 12, 200, 200]
+        default_dof_pos = [math.degrees(x) for x in [1.569e+00, -1.174e+00, 1.944e+00, -2.39e+00, -1.571e+00,  6.20]] + [0.013, 0.013]
+        stiffness = [40 * np.pi / 180] * 6 + [500] * 2
+        damping = [80 * np.pi / 180] * 6 + [1] * 2
+        max_force = [50, 50, 50, 50, 50, 50, 100, 100]
         max_velocity = [math.degrees(x) for x in [2.175, 2.175, 2.175, 2.61, 2.61, 2.61]] + [0.2, 0.2]
 
         for i, dof in enumerate(dof_paths):

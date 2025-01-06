@@ -51,16 +51,40 @@ from omniisaacgymenvs.tasks.myfactory.factory_schema_class_task import myFactory
 from omniisaacgymenvs.tasks.myfactory.factory_schema_config_task import (
     myFactorySchemaConfigTask,
 )
+import rclpy
+import threading
+from omniisaacgymenvs.sim2real.ur5e import UR5eTraj
 
 
 class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
     def __init__(self, name, sim_config, env, offset=None) -> None:
         """Initialize environment superclass. Initialize instance variables."""
+        rclpy.init()
 
         super().__init__(name, sim_config, env)
 
+        self.flag= False
+
         self.randomization_buf = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
         self._get_task_yaml_params()
+
+        sim2real_config = self._task_cfg['sim2real']
+        if sim2real_config['enabled'] and self._num_envs == 1:
+            self.real_world_ur5e = UR5eTraj()
+            print("init connection")
+            self.ros_thread = threading.Thread(target=self.spin_ros)
+            self.ros_thread.start()
+        return
+    
+    def spin_ros(self):
+        try:
+            rclpy.spin(self.real_world_ur5e)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.real_world_ur5e.destroy_node()
+            rclpy.shutdown()
+
 
     def _get_task_yaml_params(self) -> None:
         """Initialize instance variables from YAML files."""
@@ -101,10 +125,14 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         # Reset all envs
         indices = torch.arange(self.num_envs, dtype=torch.int64, device=self.device)
-        self.reset_idx(indices)
+        asyncio.ensure_future(
+            self.reset_idx_async(indices)
+        )
+        # self.reset_idx(indices)
 
         if self._dr_randomizer.randomize:
             self._dr_randomizer.set_up_domain_randomization(self)
+
 
     def _acquire_task_tensors(self) -> None:
         """Acquire tensors."""
@@ -117,8 +145,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         self.targ = target_heights
 
-        self.target_pos = target_heights * torch.tensor(
-            [0.0, 0.0, 1.0], device=self.device
+        self.target_pos =  torch.tensor(
+            [0.615, -0.425, target_heights], device=self.device
         ).repeat((self.num_envs, 1))
 
         self.identity_quat = (
@@ -130,7 +158,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         self.actions = torch.zeros(
             (self.num_envs, self.num_actions), device=self.device
         )
-        print("-------------------",self.actions, self.actions.size())
+        # print("-------------------",self.actions, self.actions.size())
 
     def pre_physics_step(self, actions) -> None:
         """Reset environments. Apply actions from policy. Simulation step called after this method."""
@@ -165,6 +193,37 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             rand_env_ids = torch.nonzero(torch.logical_and(rand_envs, reset_buf))
             self.dr.physics_view.step_randomization(rand_env_ids)
             self.randomization_buf[rand_env_ids] = 0
+    
+    async def pre_physics_step_async(self, actions) -> None:
+        """Reset environments. Apply actions from policy. Simulation step called after this method."""
+
+        if not self.world.is_playing():
+            return
+
+        env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
+        reset_buf = self.reset_buf.clone()
+
+        if len(env_ids) > 0:
+            await self.reset_idx_async(env_ids)
+
+        self.actions = actions.clone().to(
+            self.device
+        )  # shape = (num_envs, num_actions); values = [-1, 1]
+
+        self._apply_actions_as_ctrl_targets(
+            actions=self.actions, ctrl_target_gripper_dof_pos=0.0, do_scale=True
+        )
+
+        if self._dr_randomizer.randomize:
+            rand_envs = torch.where(
+                self.randomization_buf >= self._dr_randomizer.min_frequency,
+                torch.ones_like(self.randomization_buf),
+                torch.zeros_like(self.randomization_buf),
+            )
+
+            rand_env_ids = torch.nonzero(torch.logical_and(rand_envs, reset_buf))
+            self.dr.physics_view.step_randomization(rand_env_ids)
+            self.randomization_buf[rand_env_ids] = 0
 
 
     def reset_idx(self, env_ids) -> None:
@@ -172,6 +231,14 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         self._reset_ur5e(env_ids)
         self._reset_object(env_ids)
+        self._reset_buffers(env_ids)
+
+    async def reset_idx_async(self, env_ids) -> None:
+        """Reset specified environments."""
+
+        self._reset_ur5e(env_ids)
+        self._reset_object(env_ids)
+
         self._reset_buffers(env_ids)
 
     def _reset_ur5e(self, env_ids) -> None:
@@ -186,17 +253,59 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         )  
         self.dof_vel[env_ids] = 0.0  
         self.ctrl_target_dof_pos[env_ids] = self.dof_pos[env_ids]
-
+        print(env_ids)
+    
         indices = env_ids.to(dtype=torch.int32)
         self.ur5es.set_joint_positions(self.dof_pos[env_ids], indices=indices)
         self.ur5es.set_joint_velocities(self.dof_vel[env_ids], indices=indices)
 
+    def _regrasp_ur5e(self, env_ids, pos ) -> None:
+        """Reset DOF states and DOF targets of UR5e."""
+
+        self.dof_pos[env_ids] = torch.cat(
+            (
+                torch.tensor(pos,device=self.device,),
+                self.nut_widths_max[env_ids]  * 1.0, 
+                self.nut_widths_max[env_ids]  * 1.0,  
+            ),  # buffer on gripper DOF pos to prevent initial contact
+            dim=-1,
+        )
+        velocity_list = [0, 0, 0, 0, 0.0, 0.0,0,0]
+        velocity_tensor = torch.tensor(velocity_list, dtype=torch.float32, device=self.device) # Assign the tensor to self.dof_vel[env_ids] 
+        self.dof_vel[env_ids] = velocity_tensor
+
+        self.ctrl_target_dof_pos[env_ids] = self.dof_pos[env_ids]
+
+        j_ids = torch.tensor(0,dtype=torch.int32).unsqueeze(0)
+        self.ur5es.set_joint_positions(self.dof_pos[env_ids], indices=j_ids)
+        self.ur5es.set_joint_velocities(self.dof_vel[env_ids], indices=j_ids)
+
+    def _close_ur5e(self, env_ids, pos ) -> None:
+        """Reset DOF states and DOF targets of UR5e."""
+
+        self.dof_pos[env_ids] = torch.cat(
+            (
+                torch.tensor(pos,device=self.device,),
+                (self.nut_widths_max[env_ids] * 0.5) * 1.0, 
+                (self.nut_widths_max[env_ids] * 0.5)* 1.0,  
+            ),  # buffer on gripper DOF pos to prevent initial contact
+            dim=-1,
+        )
+        velocity_list = [0, 0, 0, 0, 0, 0.0,0.5,0.5]
+        velocity_tensor = torch.tensor(velocity_list, dtype=torch.float32, device=self.device) # Assign the tensor to self.dof_vel[env_ids] 
+        self.dof_vel[env_ids] = velocity_tensor
+
+        self.ctrl_target_dof_pos[env_ids] = self.dof_pos[env_ids]
+
+        j_ids = torch.tensor(0,dtype=torch.int32).unsqueeze(0)
+        self.ur5es.set_joint_positions(self.dof_pos[env_ids], indices=j_ids)
+        self.ur5es.set_joint_velocities(self.dof_vel[env_ids], indices=j_ids)
+
     def _reset_object(self, env_ids) -> None:
         """Reset root state of nut."""
 
-        nut_pos = self.cfg_base.env.table_height + self.cfg_base.env.nut_offset #0.002#self.bolt_shank_lengths[env_ids] 
-        self.nut_pos[env_ids, :] = nut_pos * torch.tensor(
-            [0.0, 0.0, 1.0], device=self.device
+        self.nut_pos[env_ids, :] =  torch.tensor(
+            [0.615, -0.425, 0.144], device=self.device #hardcode
         ).repeat(len(env_ids), 1)
 
         nut_rot = (
@@ -242,7 +351,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         # Interpret actions as target pos displacements and set pos target
         pos_actions = actions[:, 0:3]
         if self.cfg_task.rl.unidirectional_pos and ignore == False:
-            pos_actions[:, 2] = (pos_actions[:, 2] + 1.0) * 0.5  # [-1, 0]
+            pos_actions[:, 2] = (pos_actions[:, 2] + 1.0) * 0.05  # [-1, 0]
         if do_scale:
             pos_actions = pos_actions @ torch.diag(
                 torch.tensor(self.cfg_task.rl.pos_action_scale, device=self.device)
@@ -254,12 +363,16 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         # Interpret actions as target rot (axis-angle) displacements
         rot_actions = actions[:, 3:6]
         if self.cfg_task.rl.unidirectional_rot and ignore == False:
-            rot_actions[:, 2] = (rot_actions[:, 2] + 1.0) * 0.5  # COUNTER CLOCK-WISE 
+            rot_actions[:, 2] = (rot_actions[:, 2] + 1.0) * 0.2  # COUNTER CLOCK-WISE 
         if do_scale:
             rot_actions = rot_actions @ torch.diag(
                 torch.tensor(self.cfg_task.rl.rot_action_scale, device=self.device)
             )
-    
+       
+        # print("dof_posF: ",self.dof_pos[0,5])
+        # print("Flag",self.flag)
+
+
         # Convert to quat and set rot target
         angle = torch.norm(rot_actions, p=2, dim=-1)
         axis = rot_actions / angle.unsqueeze(-1)
@@ -279,8 +392,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         if self.cfg_ctrl["do_force_ctrl"]:
             # Interpret actions as target forces and target torques
             force_actions = actions[:, 6:9]
-            if self.cfg_task.rl.unidirectional_force:
-                force_actions[:, 2] = -(force_actions[:, 2] + 1.0) * 0.5  # [-1, 0]
+            if self.cfg_task.rl.unidirectional_force and ignore == False:
+                force_actions[:, 2] = (force_actions[:, 2] + 1.0) * 0.2  # [-1, 0]
             if do_scale:
                 force_actions = force_actions @ torch.diag(
                     torch.tensor(
@@ -313,6 +426,37 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         self.progress_buf[:] += 1
         
         if self.world.is_playing():
+
+            if self._task_cfg['sim2real']['enabled'] and self.num_envs == 1:
+                # Only retrieve the 0-th joint position even when multiple envs are used
+                act_indices = torch.arange(8, dtype=torch.int64, device=self.device)
+                joint_pos = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+                self.send_joint_pos(joint_pos, grp_open=False)
+                if self.cfg_task.env.sequential_sequence:
+                    is_limited = self.dof_pos[:,5] <= -6.0
+                    if is_limited.any():
+                        if self.cfg_task.env.open_and_rotate:
+                            self._rotate_gripper(
+                                sim_steps=self.cfg_task.env.num_gripper_rotate_sim_steps
+                            )
+                            # joint_pos = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+                            # self.send_joint_pos(joint_pos, grp_open=False)
+                            self._close_gripper(
+                                sim_steps=self.cfg_task.env.num_gripper_close_sim_steps
+                            )
+                            # joint_pos = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+                            # self.send_joint_pos(joint_pos, grp_open=False)
+                        else:
+                            self.send_joint_pos(joint_pos, grp_open=False)
+                    else:
+                        self.send_joint_pos(joint_pos, grp_open=False)
+                else:
+                    self.send_joint_pos(joint_pos, grp_open=False)
+                self.send_joint_pos(joint_pos, grp_open=False)
+
+
+
+
             self.refresh_base_tensors()
             self.refresh_env_tensors()
             self._refresh_task_tensors()
@@ -322,6 +466,31 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
     
+    async def post_physics_step_async(self):
+        """Step buffers. Refresh tensors. Compute observations and reward. Reset environments."""
+
+        self.progress_buf[:] += 1
+        
+        if self.world.is_playing():
+            if self.cfg_task.env.sequential_sequence:
+                is_limited = self.dof_pos[0,5] <= -6.0
+                if is_limited:
+                    if self.cfg_task.env.open_and_rotate:
+                        print("d")
+                        # self._open_gripper_async(
+                        #     sim_steps=self.cfg_task.env.num_gripper_open_sim_steps
+                        # )
+
+                    
+            self.refresh_base_tensors()
+            self.refresh_env_tensors()
+            self._refresh_task_tensors()
+            self.get_observations()
+            self.calculate_metrics()
+            self.get_extras()
+
+        return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
+
     def _refresh_task_tensors(self) -> None:
         """Refresh tensors."""
 
@@ -344,10 +513,14 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.fingerpad_midpoint_pos - self.nut_com_pos, p=2, dim=-1
         )  # distance between nut COM and midpoint between centers of fingerpads
         
+
         self.was_success = torch.zeros_like(self.progress_buf, dtype=torch.bool)
 
     def get_observations(self) -> dict:
         """Compute observations."""
+        sensor_joint_forces = self.ur5es.get_measured_joint_forces(clone=False) #mimics FT sensors
+        print("OBSERVATIONS", sensor_joint_forces)
+
 
         # Shallow copies of tensors
         obs_tensors = [
@@ -374,6 +547,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         )  # shape = (num_envs, num_observations)
 
         observations = {self.ur5es.name: {"obs_buf": self.obs_buf}}
+
         return observations
 
     def calculate_metrics(self) -> None:
@@ -401,17 +575,31 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         keypoint_reward = -(self.nut_keypoint_dist + self.finger_nut_keypoint_dist)
         action_penalty = torch.norm(self.actions, p=2, dim=-1)
+    
+        # scaled_success_bonus = torch.clamp(
+        #     self.cfg_task.rl.success_bonus / (self.nut_dist_to_target + 0.01),
+        #     max=self.cfg_task.rl.success_bonus
+        # )
+
+        scaled_success_bonus =  -math.log10((self.nut_dist_to_target)+0.001)*2
+        print("scale_log",scaled_success_bonus)
+
+        in_target = torch.where( self.nut_dist_to_target <= 0.0001,1,0) #task success
 
         self.rew_buf[:] = (
             keypoint_reward * self.cfg_task.rl.keypoint_reward_scale
             - action_penalty * self.cfg_task.rl.action_penalty_scale
-            + curr_successes * self.cfg_task.rl.success_bonus
-        ) 
+            + in_target * self.cfg_task.rl.close_bonus
+            + curr_successes * scaled_success_bonus
+        )
+
+
         # print("MIN REW: ",self.rew_buf.min(),"INDEX: ",self.rew_buf.argmin(), self.progress_buf[self.rew_buf.argmin()])
         # print("NUT TARGET MIN_REW: ", self.nut_dist_to_target[self.rew_buf.argmin()])
 
-        # print("MAX REW: ",self.rew_buf.max(),"INDEX: ",self.rew_buf.argmax(), self.progress_buf[self.rew_buf.argmax()])
-        # print("NUT TARGET MAX_REW: ", self.nut_dist_to_target[self.rew_buf.argmax()])
+        print("MAX REW: ",self.rew_buf.max(),"INDEX: ", self.progress_buf[self.rew_buf.argmax()])
+        print("NUT TARGET MAX_REW: ", self.nut_dist_to_target[self.rew_buf.argmax()])
+
 
     def _get_keypoint_dist(self, body) -> torch.Tensor:
         """Get keypoint distance."""
@@ -445,8 +633,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.keypoint2_targ = self.keypoint1_targ + torch.tensor(
                 [0.0, 0.0, axis_length], device=self.device
             )
-            print("kp1N: ",self.keypoint1[:,-1].min())
-            print("kp2N: ",self.keypoint2[:,-1].min())
+            # print("kp1N: ",self.keypoint1[:,-1].min())
+            # print("kp2N: ",self.keypoint2[:,-1].min())
 
         elif body == "finger_nut":
             # Keypoint distance between finger and nut
@@ -454,7 +642,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.keypoint2 = fc.translate_along_local_z(
                 pos=self.keypoint1,
                 quat=self.fingertip_midpoint_quat,
-                offset=axis_length, 
+                offset=axis_length, #change
                 device=self.device,
             )
 
@@ -465,6 +653,9 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
                 offset=axis_length,
                 device=self.device,
             )
+            # print("kp1F: ",self.keypoint1[:,-1].min())
+            # print("kp2F: ",self.keypoint2[:,-1].min())
+
 
         self.keypoint3 = self.keypoint1 + (self.keypoint2 - self.keypoint1) * 1.0 / 3.0
         self.keypoint4 = self.keypoint1 + (self.keypoint2 - self.keypoint1) * 2.0 / 3.0
@@ -477,7 +668,52 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             + torch.norm(self.keypoint3_targ - self.keypoint3, p=2, dim=-1)
             + torch.norm(self.keypoint4_targ - self.keypoint4, p=2, dim=-1)
         )
+        # print("DIST: ",keypoint_dist.min(), keypoint_dist.argmin())
         return keypoint_dist
+
+#_______________________________________________________________sync process
+    def _rotate_gripper(
+            self, sim_steps=450
+    ) -> None:
+        act_indices = torch.arange(8, dtype=torch.int64, device=self.device)
+        joint_objetive = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+        initial_wrist = joint_objetive[0,5]
+        objective = -(joint_objetive[0,5])
+        for step in range(sim_steps):
+            try:
+                print("objective", objective)
+                joint_pos = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+                joint_pos[:5] = joint_objetive[:5]
+                
+                desired_position = initial_wrist + (objective - initial_wrist) * (step + 1) / sim_steps #interpolation
+                joint_pos[0,5] = desired_position
+                print("joint_increment", joint_pos)
+                pos = joint_pos.clone()
+                pos = pos.squeeze().tolist()
+                print("pos", pos)
+                self._regrasp_ur5e(0, pos[:6])
+                self.send_joint_pos(joint_pos, grp_open = True)
+
+                SimulationContext.step(self.world, render=True)
+            except Exception as e:
+                print(f"Error during rotate execution: {e}")
+
+    def _close_gripper(
+            self, sim_steps=20
+    ) -> None:
+        act_indices = torch.arange(8, dtype=torch.int64, device=self.device)
+        joint_pos = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+        for _ in range(sim_steps):
+            try:
+                # joint_pos = self.ur5es.get_joint_positions(indices=[0], joint_indices=act_indices)
+                pos = joint_pos.clone()
+                pos = joint_pos.squeeze().tolist()
+                self._close_ur5e(0, pos[:6])
+                self.send_joint_pos(joint_pos, grp_open = False)
+                SimulationContext.step(self.world, render=True)
+            except Exception as e:
+                print(f"Error during close execution: {e}")
+
 
     def _get_curr_successes(self) -> torch.Tensor:
         """Get success mask at current timestep."""
@@ -485,13 +721,15 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         curr_successes = torch.zeros(
             (self.num_envs,), dtype=torch.bool, device=self.device
         )
+
         # If nut is close enough to target pos
         is_unscrewed = torch.where(
-            self.nut_dist_to_target < self.thread_pitches.squeeze(-1) * 2,
+            self.nut_dist_to_target < self.thread_pitches.squeeze(-1) * 5,
             torch.ones_like(curr_successes),
             torch.zeros_like(curr_successes),
         )
         curr_successes = torch.logical_or(curr_successes, is_unscrewed)
+        # print(self.thread_pitches.squeeze(-1) * 2)
         return curr_successes
 
     def _get_curr_failures(self, curr_successes) -> torch.Tensor:
@@ -511,8 +749,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         #If nut has slipped (distance-based definition)
         self.is_slipped = torch.where(
             self.nut_dist_to_fingerpads
-            > self.asset_info_ur5e_table.ur5e_fingerpad_length * 0.5
-            + self.nut_heights.squeeze(-1) * 0.5,
+            > self.asset_info_ur5e_table.ur5e_fingerpad_length * 3.5
+            + self.nut_heights.squeeze(-1) * 3.5,
             torch.ones_like(curr_failures),
             curr_failures,
         )
@@ -531,23 +769,21 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             + self.bolt_shank_lengths.squeeze(-1)
             + self.nut_heights.squeeze(-1) * 0.5,
         )
+        self.is_expired_4 = torch.where( self.nut_dist_to_target <= 0.0001,1,0) #RESTART REACHED TARGET
 
         #EXPIRED CONDITIONS
         self.is_expired = (self.progress_buf[:] >= self.cfg_task.rl.max_episode_length) #DEFAULT_RESTART
-        self.is_expired_2 = torch.where(self.is_far[:]== 1,1,0)
-        self.is_expired_3 = torch.where(self.rew_buf[:] < -0.75,1,0) #RESTART WHEN ERROR IS CONSIDERABLE
-        
-        #REACH
-        self.is_expired_4 = torch.where( self.nut_dist_to_target < 0,1,0) #RESTART REACHED TARGET
-        
-
-        #EXPIRED LOGIC
-        self.is_expired = torch.logical_or(self.is_expired,self.is_expired_2) 
-        self.is_expired = torch.logical_or(self.is_expired,self.is_expired_3)   
         self.is_expired = torch.logical_or(self.is_expired,self.is_expired_4)   
+
+
         #FAILURE LOGIC
         curr_failures = torch.logical_or(curr_failures, self.is_far)
         curr_failures = torch.logical_or(curr_failures, self.is_slipped)
         curr_failures = torch.logical_or(curr_failures, self.is_fallen)
    
         return curr_failures
+    
+
+    def send_joint_pos(self, joint_pos, grp_open):
+        self.real_world_ur5e.send_joint_pos(joint_pos, grp_open)
+

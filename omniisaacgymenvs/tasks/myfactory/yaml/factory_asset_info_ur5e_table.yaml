@@ -3,5 +3,5 @@ ur5e_finger_length: 0.06207  # distance from origin of finger to bottom of finge
 ur5e_fingerpad_length: 0.0200  # distance from top of inner surface of fingerpad to bottom of inner surface of fingerpad
 ur5e_gripper_width_max: 0.0500  # maximum opening width of gripper
 
-table_depth: 0.6  # depth of table
-table_width: 1.0  # width of table
+table_depth: 0.5  # depth of table
+table_width: 0.3  # width of table

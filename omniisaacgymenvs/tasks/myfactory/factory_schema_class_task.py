@@ -72,6 +72,14 @@ class myFactoryABCTask(ABC):
         pass
 
     @abstractmethod
+    def send_joint_pos(self,joint_pos, grp_open):
+        pass
+
+    # @abstractmethod
+    # def get_plot(self,tf):
+    #     pass
+        
+    @abstractmethod
     def calculate_metrics(self):
         """Detect successes and failures. Update reward and reset buffers."""
         pass

@@ -1,4 +1,5 @@
 # Omniverse Isaac Gym Reinforcement Learning Environments for Isaac Sim
+
 <img src="https://github.com/user-attachments/assets/1e74eb3d-eba1-4dc7-abee-a8ecac00d31f" width="300" height="180"/>&emsp;<img src="https://github.com/user-attachments/assets/15054bca-19a1-4486-a06d-8d8d48da094a" width="200" height="180"/>
 
 *Follow the installation process and check the instruction of the [myReadME](https://github.com/joyapseb/UROmniIsaacGymEnvs/blob/main/myReadME.md) to run the UR5e Unscrewing example.*
@@ -29,7 +30,7 @@ It is recommended to have at least 32GB RAM and a GPU with at least 12GB VRAM. F
 
 Follow the Isaac Sim [documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_workstation.html) to install the latest Isaac Sim release. 
 
-*Examples in this repository rely on features from IsaacSim 4.0.0 and 4.1.0. The latest version 4.2.0 does not longer supports OmniIsaacGymEnvs*
+*Examples in this repository rely on features from the most recent Isaac Sim release. Please make sure to update any existing Isaac Sim build to the latest release version, 2023.1.1, to ensure examples work as expected.*
 
 Once installed, this repository can be used as a python module, `omniisaacgymenvs`, with the python executable provided in Isaac Sim.
 

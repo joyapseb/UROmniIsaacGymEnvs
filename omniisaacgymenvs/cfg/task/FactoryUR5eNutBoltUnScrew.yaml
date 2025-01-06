@@ -9,7 +9,7 @@ physics_engine: ${..physics_engine}
 
 sim:
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
-  dt: 0.00833333333
+  dt: 0.01
   gravity_mag: 9.81
   disable_gravity: False
 
@@ -80,19 +80,19 @@ sim:
 
 env:
   controlFrequencyInv: 2  # 60 Hz
-  numEnvs: ${resolve_default:128,${...num_envs}}
+  numEnvs: ${resolve_default:1,${...num_envs}}
   numObservations: 32
   numActions: 12
 
-  sequential_sequence: False #
+  sequential_sequence: True #
 
   open_and_rotate: True #open the gripper and return to +/-360 degrees
-  num_gripper_open_sim_steps: 20 #number of timesteps to reserve for moving opening gripper after last step of episode
-  num_gripper_close_sim_steps: 20 #number of timesteps to reserve for moving closing gripper after last step of episode
-  num_gripper_rotate_sim_steps: 40
+  num_gripper_open_sim_steps: 30 #number of timesteps to reserve for moving opening gripper after last step of episode
+  num_gripper_close_sim_steps: 30 #number of timesteps to reserve for moving closing gripper after last step of episode
+  num_gripper_rotate_sim_steps: 1700
 randomize:
-  ur5e_arm_initial_dof_pos: [0.0, -1.57e+00, 1.38e+00, -1.35e+00, -1.57e+00, 5.60e-01] #[0.0, -1.57e+00, 1.38e+00, -1.35e+00, -1.57e+00, 7.8550e-01]
-  nut_rot_initial: 30.0  # initial rotation of nut from configuration in CAD [deg]; default = 30.0 (gripper aligns with flat surfaces of nut)
+  ur5e_arm_initial_dof_pos: [1.523e+00, -1.333e+00, 1.792e+00, -2.049e+00, -1.572e+00,  6.203]
+  nut_rot_initial: 20.0  # initial rotation of nut from configuration in CAD [deg]; default = 30.0 (gripper aligns with flat surfaces of nut)
 
 rl:
   pos_action_scale: [0.1, 0.1, 0.1]
@@ -108,15 +108,16 @@ rl:
   clamp_rot: True
   clamp_rot_thresh: 1.0e-6
 
-  add_obs_finger_force: False  # add observations of force on left and right fingers
+  add_obs_finger_force: False  # add observations of force on left and right fingers (not used for sim2real)
 
   keypoint_reward_scale: 1.0  # scale on keypoint-based reward
   action_penalty_scale: 0.0 # scale on action penalty
 
-  max_episode_length: 2048
+  max_episode_length: 20000
 
   far_error_thresh: 0.1  # threshold above which nut is considered too far from bolt
-  success_bonus: 5.0  # bonus if nut is far enough to base of bolt shank
+  success_bonus: 1.1  # bonus if nut is far enough to base of bolt shank
+  close_bonus : 10
 
 
 ctrl:
@@ -157,15 +158,17 @@ ctrl:
       force_ctrl_axes: [0, 0, 1, 0, 0, 0]
       wrench_prop_gains: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
   hybrid_force_motion:
-      motion_ctrl_axes: [1, 1, 0, 1, 1, 1]
-      task_prop_gains: [40, 40, 40, 40, 40, 40]
-      task_deriv_gains: [8, 8, 8, 8, 8, 8]
+      motion_ctrl_axes: [0, 0, 1, 0, 0, 1]
+      task_prop_gains: [1, 1, 4, 1, 1, 800]
+      task_deriv_gains: [1, 1, 1, 1, 1, 1]
       force_ctrl_axes: [0, 0, 1, 0, 0, 0]
       wrench_prop_gains: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+  
+sim2real:
+  enabled : True
 
 domain_randomization:
   randomize: False
-  min_frequency: 400
   randomization_params:
     rigid_prim_views:
       nuts_view:
@@ -174,14 +177,14 @@ domain_randomization:
             num_buckets: 250
             operation: "scaling"
             distribution: "uniform"
-            distribution_parameters: [[1.75, 1.75, 0.0], [2.5, 2.5, 0.0]]
+            distribution_parameters: [[3.75, 3.75, 0.0], [4.0, 4.0, 0.0]]
       bolts_view:
             material_properties:
               on_reset:
                 num_buckets: 250
                 operation: "scaling"
                 distribution: "uniform"
-                distribution_parameters: [[1.75, 1.75, 0.0], [2.5, 2.5, 0.0]]
+                distribution_parameters: [[3.75, 3.75, 0.0], [4.0, 4.0, 0.0]]
 
 
 

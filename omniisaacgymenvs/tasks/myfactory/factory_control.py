@@ -173,7 +173,7 @@ def compute_dof_torque(
             task_wrench_force = (
                 task_wrench_force + ctrl_target_fingertip_contact_wrench
             )  # open-loop force control (building towards ETH eq. 3.96-3.98)
-
+            # print("TASK_WRENCH_force:", task_wrench_force)
             if cfg_ctrl["force_ctrl_method"] == "closed":
                 force_error, torque_error = _get_wrench_error(
                     left_finger_force=left_finger_force,
@@ -189,16 +189,27 @@ def compute_dof_torque(
                 ] * torch.cat(
                     (force_error, torque_error), dim=1
                 )  # part of Modern Robotics eq. 11.61
+                # print("TASK_WRENCH_RED:", task_wrench_force)
+
+
+            # task_wrench = (
+            #     task_wrench
+            #     + torch.tensor(cfg_ctrl["force_ctrl_axes"], device=device).unsqueeze(0)
+            #     * task_wrench_force
+            # )
 
             task_wrench = (
                 task_wrench
-                + torch.tensor(cfg_ctrl["force_ctrl_axes"], device=device).unsqueeze(0)
+                + cfg_ctrl["force_ctrl_axes"].clone().detach().to(device).unsqueeze(0)
                 * task_wrench_force
             )
+    
+            # print("TASK_WRENCH_FINAL:", task_wrench)
 
         # Set tau = J^T * tau, i.e., map tau into joint space as desired
         jacobian_T = torch.transpose(jacobian, dim0=1, dim1=2)
         dof_torque[:, 0:6] = (jacobian_T @ task_wrench.unsqueeze(-1)).squeeze(-1)
+        # print("DOF_TORQUE_FINAL:", dof_torque)
 
     dof_torque[:, 6:8] = cfg_ctrl["gripper_prop_gains"] * (
         ctrl_target_gripper_dof_pos - dof_pos[:, 6:8]

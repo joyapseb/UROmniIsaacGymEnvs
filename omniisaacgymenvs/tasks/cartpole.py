@@ -36,9 +36,16 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
 from omniisaacgymenvs.robots.articulations.cartpole import Cartpole
 
+from omni.isaac.core.utils.extensions import enable_extension
+enable_extension("omni.isaac.ros2_bridge")
+import rclpy
+import threading
+from omniisaacgymenvs.sim2real.plot import Plotter
+
 
 class CartpoleTask(RLTask):
     def __init__(self, name, sim_config, env, offset=None) -> None:
+        rclpy.init()
 
         self.update_config(sim_config)
         self._max_episode_length = 500
@@ -46,8 +53,26 @@ class CartpoleTask(RLTask):
         self._num_observations = 4
         self._num_actions = 1
 
+        # sim2real_config = self._task_cfg['sim2real']
+        # if sim2real_config['enabled'] or self._num_envs == 1:
+        #     self.simulated_tf_data = Plotter()
+        #     print("init  PLOTTER connection")
+        #     self.ros_thread = threading.Thread(target=self.spin_ros)
+        #     self.ros_thread.start()
+
+    
         RLTask.__init__(self, name, env)
         return
+    
+    def spin_ros(self):
+        """Function to spin the ROS2 node in a separate thread."""
+        try:
+            rclpy.spin(self.simulated_tf_data)  # Run ROS2 spin for the Plotter
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.simulated_tf_data.destroy_node()
+            rclpy.shutdown()
 
     def update_config(self, sim_config):
         self._sim_config = sim_config
@@ -156,9 +181,14 @@ class CartpoleTask(RLTask):
         reward = torch.where(torch.abs(self.pole_pos) > np.pi / 2, torch.ones_like(reward) * -2.0, reward)
 
         self.rew_buf[:] = reward
+        self.get_plot()
 
+       
     def is_done(self) -> None:
         resets = torch.where(torch.abs(self.cart_pos) > self._reset_dist, 1, 0)
         resets = torch.where(torch.abs(self.pole_pos) > math.pi / 2, 1, resets)
         resets = torch.where(self.progress_buf >= self._max_episode_length, 1, resets)
         self.reset_buf[:] = resets
+    
+    def get_plot(self):
+        self.simulated_tf_data.get_plot()

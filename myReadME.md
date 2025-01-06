@@ -10,7 +10,7 @@ PYTHON_PATH scripts/rlgames_train.py task=FactoryUR5eNutBoltUnScrew num_envs=256
 ```
 To test a trained checkpoint, run:
 ```
-PYTHON_PATH scripts/rlgames_train.py task=FactoryUR5eNutBoltUnScrew num_envs=256 checkpoint=runs/WEE/nn/WEE.pth test=True
+PYTHON_PATH scripts/rlgames_train.py task=FactoryUR5eNutBoltUnScrew num_envs=256 checkpoint=/[your_path]/OmniIsaacGymEnvs/omniisaacgymenvs/runs/WEE/nn/WEE.pth test=True
 
 ```
 
@@ -31,4 +31,33 @@ dof_paths = [
     "_hand/ur5e_finger_joint2",
 ]
 
+## Robotiq_85 / 12 DOF
+dof_paths = [
+            "base_link_inertia/shoulder_pan_joint",
+            "shoulder_link/shoulder_lift_joint",
+            "upper_arm_link/elbow_joint",
+            "forearm_link/wrist_1_joint",
+            "wrist_1_link/wrist_2_joint",
+            "wrist_2_link/wrist_3_joint",
+            "robotiq/robotiq_arg2f_base_link/finger_joint",
+            "robotiq/robotiq_arg2f_base_link/left_inner_knuckle_joint",
+            "robotiq/robotiq_arg2f_base_link/right_inner_knuckle_joint",
+            "robotiq/robotiq_arg2f_base_link/right_outer_knuckle_joint",
+            "robotiq/left_outer_finger/left_inner_finger_joint",
+            "robotiq/right_outer_finger/right_inner_finger_joint",
+        ]
 
+dof_paths = [
+            "myur5e/base_link/shoulder_pan_joint",
+            "myur5e/shoulder_link/shoulder_lift_joint",
+            "myur5e/upper_arm_link/elbow_joint",
+            "myur5e/forearm_link/wrist_1_joint",
+            "myur5e/wrist_1_link/wrist_2_joint",
+            "myur5e/wrist_2_link/wrist_3_joint",
+            "myur5e/wrist_3_link/robotiq_85_left_inner_knuckle_joint",
+            "myur5e/wrist_3_link/robotiq_85_left_knuckle_joint",
+            "myur5e/wrist_3_link/robotiq_85_right_inner_knuckle_joint",
+            "myur5e/wrist_3_link/robotiq_85_right_knuckle_joint",
+            "myur5e/robotiq_85_left_inner_knuckle_link/robotiq_85_left_finger_tip_joint",
+            "myur5e/robotiq_85_right_inner_knuckle_link/robotiq_85_right_finger_tip_joint",
+        ]

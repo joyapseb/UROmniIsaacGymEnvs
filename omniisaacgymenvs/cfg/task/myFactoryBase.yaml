@@ -10,8 +10,8 @@ sim:
     
 env:
   env_spacing: 1.5
-  ur5e_depth: 0.484
-  table_height: 0.4 #0.33 unscrew / #0.30 screw
+  ur5e_depth: 0.51
+  table_height: 0.142 #0.33 unscrew / #0.30 screw 0.0005
   ur5e_friction: 1.0
   table_friction: 0.3
   nut_offset : 0.002
