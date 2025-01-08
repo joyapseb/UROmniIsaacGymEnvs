@@ -51,10 +51,12 @@ from omniisaacgymenvs.tasks.myfactory.factory_schema_class_task import myFactory
 from omniisaacgymenvs.tasks.myfactory.factory_schema_config_task import (
     myFactorySchemaConfigTask,
 )
+from omniisaacgymenvs.envs.vec_env_rlgames import VecEnvRLGames
+from omniisaacgymenvs.utils.config_utils.sim_config import SimConfig
 
 
 class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
-    def __init__(self, name, sim_config, env, offset=None) -> None:
+    def __init__(self, name: str, sim_config: SimConfig, env: VecEnvRLGames) -> None:
         """Initialize environment superclass. Initialize instance variables."""
 
         super().__init__(name, sim_config, env)
@@ -106,6 +108,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         if self._dr_randomizer.randomize:
             self._dr_randomizer.set_up_domain_randomization(self)
 
+        self.init_nut_dist_to_fingerpads = self.nut_dist_to_fingerpads
+
     def _acquire_task_tensors(self) -> None:
         """Acquire tensors."""
 
@@ -132,7 +136,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         )
         print("-------------------",self.actions, self.actions.size())
 
-    def pre_physics_step(self, actions) -> None:
+    def pre_physics_step(self, actions: torch.Tensor) -> None:
         """Reset environments. Apply actions from policy. Simulation step called after this method."""
 
         if not self.world.is_playing():
@@ -167,14 +171,14 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.randomization_buf[rand_env_ids] = 0
 
 
-    def reset_idx(self, env_ids) -> None:
+    def reset_idx(self, env_ids: torch.Tensor) -> None:
         """Reset specified environments."""
 
         self._reset_ur5e(env_ids)
         self._reset_object(env_ids)
         self._reset_buffers(env_ids)
 
-    def _reset_ur5e(self, env_ids) -> None:
+    def _reset_ur5e(self, env_ids: torch.Tensor) -> None:
         """Reset DOF states and DOF targets of UR5e."""
         self.dof_pos[env_ids] = torch.cat(
             (
@@ -191,7 +195,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         self.ur5es.set_joint_positions(self.dof_pos[env_ids], indices=indices)
         self.ur5es.set_joint_velocities(self.dof_vel[env_ids], indices=indices)
 
-    def _reset_object(self, env_ids) -> None:
+    def _reset_object(self, env_ids: torch.Tensor) -> None:
         """Reset root state of nut."""
 
         nut_pos = self.cfg_base.env.table_height + self.cfg_base.env.nut_offset #0.002#self.bolt_shank_lengths[env_ids] 
@@ -229,14 +233,14 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             indices,
         )
 
-    def _reset_buffers(self, env_ids) -> None:
+    def _reset_buffers(self, env_ids: torch.Tensor) -> None:
         """Reset buffers."""
 
         self.reset_buf[env_ids] = 0
         self.progress_buf[env_ids] = 0
 
     def _apply_actions_as_ctrl_targets(
-        self, actions, ctrl_target_gripper_dof_pos, do_scale, ignore=False
+        self, actions: torch.Tensor, ctrl_target_gripper_dof_pos: torch.Tensor | float, do_scale: bool, ignore: bool = False
     ) -> None:
         """Apply actions from policy as position/rotation/force/torque targets."""
         # Interpret actions as target pos displacements and set pos target
@@ -383,20 +387,20 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         curr_successes = self._get_curr_successes()
         curr_failures = self._get_curr_failures(curr_successes)
 
-        self._update_reset_buf(curr_successes, curr_failures)
         self._update_rew_buf(curr_successes)
+        self._update_reset_buf(curr_successes, curr_failures)
 
         self.randomization_buf += 1 #DOMAIN RANDOMIZATION BUFF
 
         if torch.any(self.is_expired):
             self.extras["successes"] = torch.mean(curr_successes.float())
 
-    def _update_reset_buf(self,curr_successes, curr_failures) -> None:
+    def _update_reset_buf(self, curr_successes, curr_failures) -> None:
         """Assign environments for reset if successful or failed."""
 
-        self.reset_buf[:] = self.is_expired
+        self.reset_buf[:] = torch.logical_or(curr_successes, curr_failures)
 
-    def _update_rew_buf(self, curr_successes) -> None:
+    def _update_rew_buf(self, curr_successes: torch.Tensor) -> None:
         """Compute reward at current timestep."""
 
         keypoint_reward = -(self.nut_keypoint_dist + self.finger_nut_keypoint_dist)
@@ -413,7 +417,7 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         # print("MAX REW: ",self.rew_buf.max(),"INDEX: ",self.rew_buf.argmax(), self.progress_buf[self.rew_buf.argmax()])
         # print("NUT TARGET MAX_REW: ", self.nut_dist_to_target[self.rew_buf.argmax()])
 
-    def _get_keypoint_dist(self, body) -> torch.Tensor:
+    def _get_keypoint_dist(self, body: str) -> torch.Tensor:
         """Get keypoint distance."""
 
         axis_length = (
@@ -445,8 +449,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             self.keypoint2_targ = self.keypoint1_targ + torch.tensor(
                 [0.0, 0.0, axis_length], device=self.device
             )
-            print("kp1N: ",self.keypoint1[:,-1].min())
-            print("kp2N: ",self.keypoint2[:,-1].min())
+            #print("kp1N: ",self.keypoint1[:,-1].min())
+            #print("kp2N: ",self.keypoint2[:,-1].min())
 
         elif body == "finger_nut":
             # Keypoint distance between finger and nut
@@ -494,11 +498,18 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
         curr_successes = torch.logical_or(curr_successes, is_unscrewed)
         return curr_successes
 
-    def _get_curr_failures(self, curr_successes) -> torch.Tensor:
+    def _get_curr_failures(self, curr_successes: torch.Tensor) -> torch.Tensor:
         """Get failure mask at current timestep."""
 
         curr_failures = torch.zeros(
             (self.num_envs,), dtype=torch.bool, device=self.device
+        )
+
+        # If max episode length has been reached
+        self.is_expired = torch.where(
+            self.progress_buf[:] >= self.cfg_task.rl.max_episode_length,
+            torch.ones_like(curr_failures),
+            curr_failures,
         )
 
         # If nut is too far from target pos
@@ -510,16 +521,16 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
 
         #If nut has slipped (distance-based definition)
         self.is_slipped = torch.where(
-            self.nut_dist_to_fingerpads
-            > self.asset_info_ur5e_table.ur5e_fingerpad_length * 0.5
+            self.nut_dist_to_fingerpads - (self.init_nut_dist_to_fingerpads - 0.5844) # franka heuristic assumes initial distance of 0.5844, so adjust thresholding distance to match
+            > self.asset_info_ur5e_table.ur5e_fingerpad_length * 0.588 # * 0.5 hardcoded for franka, so rescaled to match ur5e fingerpad length
             + self.nut_heights.squeeze(-1) * 0.5,
             torch.ones_like(curr_failures),
             curr_failures,
         )
 
-        # self.is_slipped = torch.logical_and(
-        #     self.is_slipped, torch.logical_not(curr_successes)
-        # )  # ignore slip if successful
+        self.is_slipped = torch.logical_and(
+             self.is_slipped, torch.logical_not(curr_successes)
+        )  # ignore slip if successful
 
         # If nut has fallen (i.e., if nut XY pos has drifted from center of bolt and nut Z pos has drifted below top of bolt)
         self.is_fallen = torch.logical_and(
@@ -532,20 +543,8 @@ class myFactoryTaskNutBoltUnScrew(myFactoryEnvNutBolt, myFactoryABCTask):
             + self.nut_heights.squeeze(-1) * 0.5,
         )
 
-        #EXPIRED CONDITIONS
-        self.is_expired = (self.progress_buf[:] >= self.cfg_task.rl.max_episode_length) #DEFAULT_RESTART
-        self.is_expired_2 = torch.where(self.is_far[:]== 1,1,0)
-        self.is_expired_3 = torch.where(self.rew_buf[:] < -0.75,1,0) #RESTART WHEN ERROR IS CONSIDERABLE
-        
-        #REACH
-        self.is_expired_4 = torch.where( self.nut_dist_to_target < 0,1,0) #RESTART REACHED TARGET
-        
-
-        #EXPIRED LOGIC
-        self.is_expired = torch.logical_or(self.is_expired,self.is_expired_2) 
-        self.is_expired = torch.logical_or(self.is_expired,self.is_expired_3)   
-        self.is_expired = torch.logical_or(self.is_expired,self.is_expired_4)   
         #FAILURE LOGIC
+        curr_failures = torch.logical_or(curr_failures, self.is_expired)
         curr_failures = torch.logical_or(curr_failures, self.is_far)
         curr_failures = torch.logical_or(curr_failures, self.is_slipped)
         curr_failures = torch.logical_or(curr_failures, self.is_fallen)
